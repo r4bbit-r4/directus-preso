@@ -259,8 +259,8 @@ export type Accountability = {
 ##### Authentication
 
 ```javascript [|5-7]
-router.patch(
-	'/:pk',
+router.post(
+	'/',
 	asyncHandler(multipartHandler),
 	asyncHandler(async (req, res, next) => {
 		const service = new FilesService({
@@ -274,17 +274,72 @@ router.patch(
 
 ##### Authentication
 
+```javascript [|5-7|13]
+router.post(
+	'/',
+	asyncHandler(multipartHandler),
+	asyncHandler(async (req, res, next) => {
+		const service = new FilesService({
+			accountability: req.accountability,
+			schema: req.schema,
+		});
+
+		let keys: PrimaryKey | PrimaryKey[] = [];
+
+		...
+		keys = await service.createOne(req.body);
+		...
+```
+
+---
+
+##### Authentication
+
+```javascript [|1|4-6|14]
+const primaryKey = await transaction(this.knex, // knex
+	async (trx) => { const payloadAfterHooks =
+		opts.emitEvents !== false ? await emitter.emitFilter(
+			this.eventScope === 'items'
+				? ['items.create', `${this.collection}.items.create`]
+				: `${this.eventScope}.create`,
+			payload,
+			{
+				collection: this.collection,
+			},
+			{
+				database: trx,
+				schema: this.schema,
+				accountability: this.accountability, // acc
+			}, ...
+```
+
+---
+
+##### Authentication
+
 1. Parse incoming token
 2. Associate the request with a user using Accountability
-3. `Accountability is checked when a Service is invoked`
+3. `Accountability is checked in services, when the DB is involved`
 4. PROFIT
+
+---
+
+##### Authentication
+
+```mermaid
+sequenceDiagram
+    Client->>EndpointHandler: Request (Accountbility created)
+    Note over EndpointHandler: Request is proceseed
+    EndpointHandler->>Service: Invoke for sensitive operation
+    Note over Service: Do stuff
+	Service->>DB: Accountability check
+```
 
 ---
 
 ##### Lack of authentication
 
 ---
-
 
 ##### Lack of authentication
 
@@ -324,9 +379,9 @@ onst schemaMultipartHandler: RequestHandler = (req, res, next) => {
 
 ##### Lack of authentication
 
-1. Request flow: `Router → Controller → Service`
+1. Request flow: `Router → Controller → Service ->`
 2. Requests parsed for tokens (basis of auth)
-3. Auth checked in Services
+3. Auth checked in the DB through Services
 4. Complex processing can happen BEFORE auth
 
 ---
@@ -424,7 +479,23 @@ const tempFilenameDisk = 'temp_' + metadata.filename_disk;
 ...
 try { ... disk.write(tempFilenameDisk, stream, metadata.type); ...
 if (isReplacement === true) { await this.updateOne(primaryKey, metadata );
-    ... await disk.delete(filepath); }
+...
+```
+
+---
+
+##### Vulnerability
+
+```mermaid
+sequenceDiagram
+    Client->>EndpointHandler: Request (Accountbility created)
+    EndpointHandler->>MiltipartHandler: Parse multipart data
+    MiltipartHandler->>Service: Invoke uploadOne
+    Note over Service: File created
+	%% highlight the edge
+    rect rgb(66, 0, 0)
+      Service->>DB: Accountability is checked (DB)
+    end
 ```
 
 ---
@@ -434,7 +505,7 @@ if (isReplacement === true) { await this.updateOne(primaryKey, metadata );
 - We can set an "arbitrary" name for a temporary file
 - It's written to disk with arbitrary contents
 - We then try to use the file service to update the file data
-- This errors out and the file remains on the server
+- We get an authentication error, but a file was already created
 
 ---
 
@@ -480,14 +551,14 @@ x-powered-by: Directus
 
 ##### Conclusion
 
-- Auth is heavily tied to services
+- Auth is heavily tied to the DB
     - Code outside of one is unauthenticated!
 
 - File metadata is managed through the DB
     - But its merged into a mutable local var!
 
-- Errors can prevent important code from running, such as cleanup
-    - This happens because authenticated and unauthenticated channels are mixed
+- Some service methods used the DB for auth checks
+	- But only if the handled resource is DB-resident
 
 ---
 

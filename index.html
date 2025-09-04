@@ -12,6 +12,9 @@
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js/dist/reveal.css">
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js/dist/theme/dracula.css">
 
+		<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/reveal.js-mermaid-plugin/plugin/mermaid/mermaid.js"></script>
+
 		<!-- Theme used for syntax highlighted code -->
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js/plugin/highlight/monokai.css">
 
@@ -41,6 +44,7 @@
 		<script src="https://cdn.jsdelivr.net/npm/reveal.js/plugin/markdown/markdown.js"></script>
 		<script src="https://cdn.jsdelivr.net/npm/reveal.js/plugin/highlight/highlight.js"></script>
 		<script>
+		
 			Reveal.initialize({
 				hash: true,
 
@@ -49,9 +53,22 @@
 				margin: 0.04,
 				slideNumber: true,
 
+				mermaid: {
+					tartOnLoad: true,
+    				theme: 'base',
+					mirrorActors: false, // disable bottom actors on sequence diagram
+					themeVariables: { 
+						primaryTextColor: "#aaaaaa", // node test
+      					secondaryTextColor: '#aaaaaa', // edge labels
+						primaryColor: "#2e2e2e", // fill color
+    					lineColor: "#333333"
+					}
+				},
+
 				transition: 'none',
-				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMermaid ]
 			});
+
 		</script>
 	</body>
 </html>
